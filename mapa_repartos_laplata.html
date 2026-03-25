@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zonas de Reparto – La Plata</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f5f5f0;
+    color: #1a1a1a;
+    min-height: 100vh;
+  }
+
+  header {
+    background: #1a1a2e;
+    color: white;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  header .logo {
+    width: 36px; height: 36px;
+    background: #e63946;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  header h1 { font-size: 17px; font-weight: 600; }
+  header p { font-size: 12px; color: #aaa; margin-top: 1px; }
+
+  .search-bar {
+    background: white;
+    padding: 12px 16px;
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .search-bar input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1.5px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-bar input:focus { border-color: #1a1a2e; }
+
+  .search-bar button {
+    padding: 10px 18px;
+    background: #1a1a2e;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+
+  .search-bar button:hover { background: #2d2d4e; }
+
+  #result-box {
+    display: none;
+    margin: 10px 16px 0;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    border-left: 4px solid #ccc;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  #map {
+    width: 100%;
+    height: calc(100vh - 180px);
+    min-height: 400px;
+  }
+
+  .zonas-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    background: white;
+    border-top: 1px solid #e0e0e0;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+  }
+
+  .zona-item {
+    padding: 10px 14px;
+    border-right: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .zona-item:last-child { border-right: none; }
+
+  .zona-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid rgba(0,0,0,0.15);
+  }
+
+  .zona-info { flex: 1; min-width: 0; }
+  .zona-nombre { font-size: 11px; color: #666; }
+  .zona-precio { font-size: 16px; font-weight: 700; color: #1a1a2e; line-height: 1.2; }
+  .zona-km { font-size: 10px; color: #999; }
+
+  .edit-btn {
+    background: none; border: none;
+    font-size: 10px; color: #999;
+    cursor: pointer; text-decoration: underline;
+    padding: 0; margin-top: 2px; display: block;
+  }
+
+  @media (max-width: 500px) {
+    .zona-nombre { font-size: 10px; }
+    .zona-precio { font-size: 14px; }
+    .zona-item { padding: 8px 10px; gap: 7px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📦</div>
+  <div>
+    <h1>Zonas de Reparto</h1>
+    <p>Calle 58 N°590 entre 6 y 7 · La Plata</p>
+  </div>
+</header>
+
+<div class="search-bar">
+  <input id="addr-input" type="text" placeholder="Dirección del cliente (ej: Calle 13 y 44, Tolosa)" />
+  <button onclick="buscarDireccion()">Buscar zona</button>
+</div>
+
+<div id="result-box"></div>
+
+<div id="map"></div>
+
+<div class="zonas-bar">
+  <div class="zona-item">
+    <div class="zona-dot" style="background:#16a34a;border-color:#16a34a;"></div>
+    <div class="zona-info">
+      <div class="zona-nombre">Zona 1 – Cercana</div>
+      <div class="zona-precio" id="p1">$3.500</div>
+      <div class="zona-km">hasta ~5 km</div>
+      <button class="edit-btn" onclick="editarPrecio(1)">editar</button>
+    </div>
+  </div>
+  <div class="zona-item">
+    <div class="zona-dot" style="background:#d97706;border-color:#d97706;"></div>
+    <div class="zona-info">
+      <div class="zona-nombre">Zona 2 – Media</div>
+      <div class="zona-precio" id="p2">$6.500</div>
+      <div class="zona-km">5 a 10 km</div>
+      <button class="edit-btn" onclick="editarPrecio(2)">editar</button>
+    </div>
+  </div>
+  <div class="zona-item">
+    <div class="zona-dot" style="background:#dc2626;border-color:#dc2626;"></div>
+    <div class="zona-info">
+      <div class="zona-nombre">Zona 3 – Lejana</div>
+      <div class="zona-precio" id="p3">$10.000</div>
+      <div class="zona-km">más de 10 km</div>
+      <button class="edit-btn" onclick="editarPrecio(3)">editar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ORIGIN = { lat: -34.9218, lng: -57.9548 };
+const RADIOS = [5000, 10000, 18000];
+const ZONE_COLORS = [
+  { fill: '#16a34a', opacity: 0.12, stroke: '#16a34a' },
+  { fill: '#d97706', opacity: 0.12, stroke: '#d97706' },
+  { fill: '#dc2626', opacity: 0.12, stroke: '#dc2626' }
+];
+const precios = { 1: 3500, 2: 6500, 3: 10000 };
+const nombres = ['', 'Zona 1 – Cercana', 'Zona 2 – Media', 'Zona 3 – Lejana'];
+const colores = ['', '#16a34a', '#d97706', '#dc2626'];
+
+let map, geocoder, marcador, infoWindow;
+
+function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: ORIGIN, zoom: 11,
+    mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
+    zoomControlOptions: { position: google.maps.ControlPosition.RIGHT_CENTER }
+  });
+  geocoder = new google.maps.Geocoder();
+  infoWindow = new google.maps.InfoWindow();
+
+  for (let i = RADIOS.length - 1; i >= 0; i--) {
+    new google.maps.Circle({
+      map, center: ORIGIN, radius: RADIOS[i],
+      fillColor: ZONE_COLORS[i].fill,
+      fillOpacity: ZONE_COLORS[i].opacity,
+      strokeColor: ZONE_COLORS[i].stroke,
+      strokeWeight: 2.5, strokeOpacity: 0.9,
+      clickable: false
+    });
+  }
+
+  new google.maps.Marker({
+    position: ORIGIN, map,
+    title: 'Tu local – Calle 58 N°590',
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 11, fillColor: '#1a1a2e', fillOpacity: 1,
+      strokeColor: 'white', strokeWeight: 2.5
+    }
+  }).addListener('click', () => {
+    infoWindow.setContent('<div style="font-family:sans-serif;font-size:13px"><b>Tu local</b><br>Calle 58 N°590<br>entre 6 y 7, La Plata</div>');
+    infoWindow.open(map);
+  });
+
+  const autocomplete = new google.maps.places.Autocomplete(
+    document.getElementById('addr-input'),
+    { componentRestrictions: { country: 'ar' }, fields: ['geometry', 'formatted_address'] }
+  );
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    if (place.geometry) {
+      map.setCenter(place.geometry.location);
+      map.setZoom(14);
+      colocarMarcador(place.geometry.location.lat(), place.geometry.location.lng(), place.formatted_address);
+    }
+  });
+
+  map.addListener('click', e => {
+    geocoder.geocode({ location: e.latLng }, (results, status) => {
+      const label = (status === 'OK' && results[0]) ? results[0].formatted_address : 'Punto seleccionado';
+      colocarMarcador(e.latLng.lat(), e.latLng.lng(), label);
+    });
+  });
+}
+
+function distMetros(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2-lat1)*Math.PI/180, dLng = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function getZona(lat, lng) {
+  const d = distMetros(ORIGIN.lat, ORIGIN.lng, lat, lng);
+  const zona = d <= RADIOS[0] ? 1 : d <= RADIOS[1] ? 2 : 3;
+  return { zona, precio: precios[zona], km: (d/1000).toFixed(1) };
+}
+
+function colocarMarcador(lat, lng, etiqueta) {
+  if (marcador) marcador.setMap(null);
+  marcador = new google.maps.Marker({
+    position: {lat, lng}, map,
+    animation: google.maps.Animation.DROP
+  });
+  const { zona, precio, km } = getZona(lat, lng);
+  infoWindow.setContent(`
+    <div style="font-family:'Segoe UI',sans-serif;font-size:13px;line-height:1.7;min-width:190px;padding:2px 0">
+      <div style="font-size:13px;color:#555;margin-bottom:4px">${etiqueta}</div>
+      <div style="color:${colores[zona]};font-weight:700;font-size:15px">${nombres[zona]}</div>
+      <div style="color:#666;font-size:12px">${km} km del local</div>
+      <div style="font-size:18px;font-weight:700;color:#1a1a2e;margin-top:4px">Envío: $${precio.toLocaleString('es-AR')}</div>
+    </div>
+  `);
+  infoWindow.open(map, marcador);
+  const rb = document.getElementById('result-box');
+  rb.style.display = 'block';
+  rb.style.borderLeftColor = colores[zona];
+  rb.innerHTML = `<span style="color:${colores[zona]}">${nombres[zona]}</span> &nbsp;·&nbsp; ${km} km &nbsp;·&nbsp; <span style="color:#1a1a2e">Envío: $${precio.toLocaleString('es-AR')}</span>`;
+}
+
+function buscarDireccion() {
+  const addr = document.getElementById('addr-input').value.trim();
+  if (!addr) return;
+  const rb = document.getElementById('result-box');
+  rb.style.display = 'block';
+  rb.style.borderLeftColor = '#ccc';
+  rb.innerHTML = 'Buscando...';
+  geocoder.geocode({ address: addr + ', La Plata, Buenos Aires, Argentina' }, (results, status) => {
+    if (status === 'OK' && results[0]) {
+      const loc = results[0].geometry.location;
+      map.setCenter(loc); map.setZoom(14);
+      colocarMarcador(loc.lat(), loc.lng(), results[0].formatted_address);
+    } else {
+      rb.innerHTML = 'No se encontró la dirección. Probá con más detalles.';
+    }
+  });
+}
+
+function editarPrecio(zona) {
+  const nuevo = prompt(`Precio de envío Zona ${zona} (actual: $${precios[zona].toLocaleString('es-AR')}):`, precios[zona]);
+  const n = parseInt(nuevo);
+  if (!isNaN(n) && n > 0) {
+    precios[zona] = n;
+    document.getElementById('p'+zona).textContent = '$'+n.toLocaleString('es-AR');
+  }
+}
+
+document.getElementById('addr-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') buscarDireccion();
+});
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCtj9hA-RxAYb8SeJJKmPbYwRdRGMOiqog&libraries=places&callback=initMap" async defer></script>
+
+</body>
+</html>
